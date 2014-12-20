@@ -1,0 +1,194 @@
+<head>
+<Title>Particle test</title
+</head>
+<body>
+<canvas id="canvas" width="500" height="500"></canvas>
+<div id="test"></div>
+<script>
+	//Lets create a simple particle system in HTML5 canvas and JS
+
+//Initializing the canvas
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+
+//Canvas dimensions
+var W = 500; var H = 500;
+var mPosX=0;
+var mPosY=0;
+document.getElementById("test").innerHTML= mPosX+" "+mPosY;
+//Create an array of particles
+var particles = [];
+//Create the anchors for the particles
+var anchors= [];
+
+for(var i = 0; i < 49; i++)
+{
+	//This will add 49 particles to the array with random positions
+	particles.push(new create_particle2(i));
+	anchors.push(new create_anchor(i));
+}
+
+//Lets create a function which will help us to create multiple particles
+function setMouseXY(mousePosX,mousePosY) {
+	mPosX=mousePosX;
+	mPosY=mousePosY;
+	document.getElementById("test").innerHTML=mousePosX+" "+mousePosY;
+}
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+		x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+	};
+}
+
+ canvas.addEventListener('mousemove', function(e) {
+        var x = e.clientX;
+        var y = e.clientY;
+        setMouseXY(x,y);
+      }, false);
+
+function create_particle(gridOrder)
+{
+	//Random position on the canvas
+	this.x = Math.random()*W;
+	this.y = Math.random()*H;
+	
+	//Lets add random velocity to each particle
+	this.vx = Math.random()*20-10;
+	this.vy = Math.random()*20-10;
+	
+	//Random colors
+	var r = Math.random()*255>>0;
+	var g = Math.random()*255>>0;
+	var b = Math.random()*255>>0;
+	
+	this.color = "rgba("+r+", "+g+", "+b+", 0.5)";
+	
+	//Random size
+	this.radius = Math.random()*5+10;
+}
+function create_particle2(gridOrder)
+{
+	//Grid positions
+	//this.x = W*(gridOrder%7)/8+62;
+	//this.y = (Math.floor(gridOrder/7))/8*H+62;
+	this.x = Math.random()*W;
+	this.y = Math.random()*H;
+	//Lets add random velocity to each particle
+	//this.vx = Math.random()*20-10;
+	//this.vy = Math.random()*20-10;
+	this.vx = 0;
+	this.vy = 0;
+	this.ax = 0;
+	this.ay = 0;
+	
+	//Random colors
+	//var r = Math.random()*255>>0;
+	//var g = Math.random()*255>>0;
+	//var b = Math.random()*255>>0;
+	
+	var r = 255>>0;
+	var g = 255>>0;
+	var b = 255>>0;
+	
+	this.color = "rgba("+r+", "+g+", "+b+", 0.5)";
+	
+	//Random size
+	//this.radius = Math.random()*10+20;
+	this.radius = 10;
+}
+//Create the anchors
+function create_anchor(gridOrder)
+{
+	this.x = W*(gridOrder%7)/8+62;
+	this.y = (Math.floor(gridOrder/7))/8*H+62;
+}
+
+var x = 100; var y = 100;
+
+//Lets animate the particle
+function draw()
+{
+	//Moving this BG paint code inside draw() will help remove the trail
+	//of the particle
+	//Lets paint the canvas black
+	//But the BG paint shouldn't blend with the previous frame
+	ctx.globalCompositeOperation = "source-over";
+	//Lets reduce the opacity of the BG paint to give the final touch
+	ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+	ctx.fillRect(0, 0, W, H);
+	
+	//Lets blend the particle with the BG
+	ctx.globalCompositeOperation = "lighter";
+	
+	//Lets draw particles from the array now
+	for(var t = 0; t < particles.length; t++)
+	{
+		var p = particles[t];
+		var a = anchors[t];
+		ctx.beginPath();
+		
+		//Time for some colors
+		var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+		gradient.addColorStop(0, "white");
+		gradient.addColorStop(0.4, "white");
+		gradient.addColorStop(0.4, p.color);
+		gradient.addColorStop(1, "black");
+		
+		ctx.fillStyle = gradient;
+		ctx.arc(p.x, p.y, p.radius, Math.PI*2, false);
+		ctx.fill();
+		
+		//Find acceleration by assuming there's a spring relationship between the particle and mouse and particle and its anchor.
+		//p.ax = 1-(p.x-a.x)+(p.x-mPosX)*0;
+		//p.ay = 1-(p.y-a.y)+(p.y-mPosY)*0;
+		//p.ax = 1-(a.x-p.x)/1000;
+		//p.ay = 1-(a.y-p.y)/1000;
+		//Lets use the velocity now
+		//p.vx += p.ax;
+		//p.vy += p.ay;
+		if((p.x-mPosX)*(p.x-mPosX)+(p.y-mPosY)*(p.y-mPosY)<3000)
+		{
+			/*r=0>>0;
+			b=255>>0;
+			g=0>>0;
+			
+			p.color= "rgba("+r+", "+g+", "+b+", 0.5)";*/
+			
+			p.vx=(mPosX-p.x)/10;
+			p.vy=(mPosY-p.y)/10;
+		}
+		else
+		{
+			if(Math.abs(a.x-p.x)>1)
+			{
+				p.vx=(a.x-p.x)/10;
+			}
+			else
+			{
+				p.vx=0;
+			}
+			if(Math.abs(a.y-p.y)>1)
+			{
+				p.vy=(a.y-p.y)/10;
+			}
+			else
+			{
+				p.vy=0;
+			}
+		}
+		p.x+=p.vx;
+		p.y+=p.vy;
+		
+		//To prevent the balls from moving out of the canvas
+		if(p.x < -50) p.x = W+50;
+		if(p.y < -50) p.y = H+50;
+		if(p.x > W+50) p.x = -50;
+		if(p.y > H+50) p.y = -50;
+	}
+}
+
+setInterval(draw, 33);
+</script>
+</body>
